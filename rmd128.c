@@ -51,9 +51,9 @@ rmd128init(
 static void
 rmd128mix(
   rmd128_bt h[]
- ,unsigned char x[]
+ ,const unsigned char x[]
 ){
-  static rmd128_bt k[8] = { /* added constants */
+  static const rmd128_bt k[8] = { /* added constants */
     0x00000000U
    ,0x5a827999U
    ,0x6ed9eba1U
@@ -64,7 +64,7 @@ rmd128mix(
    ,0x6d703ef3U
    ,0x00000000U
   };
-  static unsigned char r[8][16] = { /* message word (from bytes) */
+  static const unsigned char r[8][16] = { /* message word (from bytes) */
    { 0, 4, 8,12,16,20,24,28,32,36,40,44,48,52,56,60}
   ,{28,16,52, 4,40,24,60,12,48, 0,36,20, 8,56,44,32}
   ,{12,40,56,16,36,60,32, 4, 8,28, 0,24,52,44,20,48}
@@ -75,7 +75,7 @@ rmd128mix(
   ,{60,20, 4,12,28,56,24,36,44,32,48, 8,40, 0,16,52}
   ,{32,24,16, 4,12,44,60, 0,20,48, 8,52,36,28,40,56}
   };
-  static unsigned char s[8][16] = { /* amount to rotate left */
+  static const unsigned char s[8][16] = { /* amount to rotate left */
    {11,14,15,12, 5, 8, 7, 9,11,13,14,15, 6, 7, 9, 8}
   ,{ 7, 6, 8,13,11, 9, 7,15, 7,12,15, 9,11, 7,13,12}
   ,{11,13, 6, 7,14, 9,13,15,14, 8,13, 6, 5,12, 7, 5}
@@ -86,7 +86,7 @@ rmd128mix(
   ,{ 9, 7,15,11, 8, 6, 6,14,12,13, 5,14,13,13, 7, 5}
   ,{15, 5, 8,11,14,14, 6,14, 6, 9,12, 9,12, 5,15, 8}
   };
-  static unsigned char v[8][16][4] = { /* hash rotate */
+  static const unsigned char v[8][16][4] = { /* hash rotate */
   {
    {0,1,2,3},{3,0,1,2},{2,3,0,1},{1,2,3,0},{0,1,2,3},{3,0,1,2},{2,3,0,1},{1,2,3,0}
   ,{0,1,2,3},{3,0,1,2},{2,3,0,1},{1,2,3,0},{0,1,2,3},{3,0,1,2},{2,3,0,1},{1,2,3,0}
@@ -154,7 +154,7 @@ rmd128mix(
 void
 rmd128update(
   rmd128_t *v
- ,unsigned char *d
+ ,const unsigned char *d
  ,unsigned int l
 ){
   unsigned char *s;
@@ -228,13 +228,13 @@ rmd128final(
 
 void
 rmd128hex(
-  unsigned char *h
+  const unsigned char *h
  ,char *o
 ){
   unsigned int i;
 
   for (i = 0; i < 16; ++i, ++h) {
-    static char m[] = "0123456789abcdef";
+    static const char m[] = "0123456789abcdef";
 
     *o++ = m[(*h >> 4) & 0xf];
     *o++ = m[(*h >> 0) & 0xf];

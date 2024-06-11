@@ -19,7 +19,7 @@
  */
 
 typedef struct rmd128 rmd128_t;
-unsigned int rmd128tsize();
+unsigned int rmd128tsize(void);
 void rmd128init(rmd128_t *);
 void rmd128update(rmd128_t *, const unsigned char *, unsigned int);
 void rmd128final(rmd128_t *, unsigned char *); /* 16 unsigned char (128 bits) */

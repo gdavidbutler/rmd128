@@ -18,9 +18,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-typedef struct rmd128 rmd128_t;
-unsigned int rmd128tsize(void);
-void rmd128init(rmd128_t *);
-void rmd128update(rmd128_t *, const unsigned char *, unsigned int);
-void rmd128final(rmd128_t *, unsigned char *); /* 16 unsigned char (128 bits) */
-void rmd128hex(const unsigned char *, char *); /* 16 unsigned char (128 bits), 32 char (not null-terminated) */
+typedef struct rmd256 rmd256_t;
+unsigned int rmd256tsize(void);
+void rmd256init(rmd256_t *);
+void rmd256update(rmd256_t *, const unsigned char *, unsigned int);
+void rmd256final(rmd256_t *, unsigned char *); /* 32 unsigned char (256 bits) */
+void rmd256hex(const unsigned char *, char *); /* 32 unsigned char (256 bits), 64 char (not null-terminated) */

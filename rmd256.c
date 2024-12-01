@@ -18,42 +18,46 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "rmd128.h"
+#include "rmd256.h"
 
-typedef unsigned int rmd128_bt; /* unsigned 32 bits */
-struct rmd128 {
- rmd128_bt h[4];       /* unsigned 32 bits */
- rmd128_bt bh;         /* bytes processed high */
- rmd128_bt bl;         /* bytes processed low */
+typedef unsigned int rmd256_bt; /* unsigned 32 bits */
+struct rmd256 {
+ rmd256_bt h[8];       /* unsigned 32 bits */
+ rmd256_bt bh;         /* bytes processed high */
+ rmd256_bt bl;         /* bytes processed low */
  unsigned int l;       /* current short data */
  unsigned char d[64];  /* short data */
 };
 
 unsigned int
-rmd128tsize(
+rmd256tsize(
   void
 ){
-  return (sizeof (rmd128_t));
+  return (sizeof (rmd256_t));
 }
 
 void
-rmd128init(
-  rmd128_t *v
+rmd256init(
+  rmd256_t *v
 ){
   v->h[0] = 0x67452301U;
   v->h[1] = 0xefcdab89U;
   v->h[2] = 0x98badcfeU;
   v->h[3] = 0x10325476U;
+  v->h[4] = 0x76543210U;
+  v->h[5] = 0xfedcba98U;
+  v->h[6] = 0x89abcdefU;
+  v->h[7] = 0x01234567U;
   v->bh = v->bl = 0;
   v->l = 0;
 }
 
 static void
-rmd128mix(
-  rmd128_bt h[]
+rmd256mix(
+  rmd256_bt h[]
  ,const unsigned char x[]
 ){
-  static const rmd128_bt k[8] = { /* added constants */
+  static const rmd256_bt k[8] = { /* added constants */
     0x00000000U
    ,0x50a28be6U
    ,0x5a827999U
@@ -110,13 +114,13 @@ rmd128mix(
   ,{4,5,6,7},{7,4,5,6},{6,7,4,5},{5,6,7,4},{4,5,6,7},{7,4,5,6},{6,7,4,5},{5,6,7,4}
   }
   };
-  rmd128_bt t[8]; /* a=0 b=1 c=2 d=3 a'=4 b'=5 c'=6 d'=7 */
-  rmd128_bt f;
+  rmd256_bt t[8]; /* a=0 b=1 c=2 d=3 a'=4 b'=5 c'=6 d'=7 */
+  rmd256_bt f;
   unsigned int i;
   unsigned int j;
 
-  for (i = 0; i < 4; ++i)
-    t[4 + i] = t[i] = h[i];
+  for (i = 0; i < 8; ++i)
+    t[i] = h[i];
   for (i = 0; i < 8; ++i) {
     for (j = 0; j < 16; ++j) {
       switch (i) {
@@ -138,17 +142,38 @@ rmd128mix(
          + k[i];
       t[v[i][j][0]] = (f << s[i][j]) | (f >> (32 - s[i][j])); /* rotate left */
     }
+    switch (i) {
+    case 1:
+      f = t[0];
+      t[0] = t[4];
+      t[4] = f;
+      break;
+    case 3:
+      f = t[1];
+      t[1] = t[5];
+      t[5] = f;
+      break;
+    case 5:
+      f = t[2];
+      t[2] = t[6];
+      t[6] = f;
+      break;
+    case 7:
+      f = t[3];
+      t[3] = t[7];
+      t[7] = f;
+      break;
+    default:
+      break;
+    }
   }
-     f = h[1] + t[2] + t[7];
-  h[1] = h[2] + t[3] + t[4];
-  h[2] = h[3] + t[0] + t[5];
-  h[3] = h[0] + t[1] + t[6];
-  h[0] = f;
+  for (i = 0; i < 8; ++i)
+    h[i] += t[i];
 }
 
 void
-rmd128update(
-  rmd128_t *v
+rmd256update(
+  rmd256_t *v
  ,const unsigned char *d
  ,unsigned int l
 ){
@@ -160,7 +185,7 @@ rmd128update(
     for (i = v->l, s = v->d + i; l && i < 64; --l, ++i, ++s, ++d)
       *s = *d;
     if (i == 64) {
-      rmd128mix(v->h, v->d);
+      rmd256mix(v->h, v->d);
       if ((v->bl += 64) < 64)
         ++v->bh;
       v->l = 0;
@@ -170,7 +195,7 @@ rmd128update(
     }
   }
   for (; l >= 64; l -= 64, d += 64) {
-    rmd128mix(v->h, d);
+    rmd256mix(v->h, d);
     if ((v->bl += 64) < 64)
       ++v->bh;
   }
@@ -182,8 +207,8 @@ rmd128update(
 }
 
 void
-rmd128final(
-  rmd128_t *v
+rmd256final(
+  rmd256_t *v
  ,unsigned char *h
 ){
   unsigned char *s;
@@ -197,7 +222,7 @@ rmd128final(
   if (i > 64 - 8) {
     for (; i < 64; ++i, ++s)
       *s = 0x00;
-    rmd128mix(v->h, v->d);
+    rmd256mix(v->h, v->d);
     i = 0;
     s = v->d;
   }
@@ -212,8 +237,8 @@ rmd128final(
   *s++ = v->bh >> (1 * 8 - 3);
   *s++ = v->bh >> (2 * 8 - 3);
   *s   = v->bh >> (3 * 8 - 3);
-  rmd128mix(v->h, v->d);
-  for (i = 0; i < 4; ++i) {
+  rmd256mix(v->h, v->d);
+  for (i = 0; i < 8; ++i) {
     *h++ = v->h[i] >> (0 * 8);
     *h++ = v->h[i] >> (1 * 8);
     *h++ = v->h[i] >> (2 * 8);
@@ -222,13 +247,13 @@ rmd128final(
 }
 
 void
-rmd128hex(
+rmd256hex(
   const unsigned char *h
  ,char *o
 ){
   unsigned int i;
 
-  for (i = 0; i < 16; ++i, ++h) {
+  for (i = 0; i < 32; ++i, ++h) {
     static const char m[] = "0123456789abcdef";
 
     *o++ = m[(*h >> 4) & 0xf];

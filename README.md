@@ -1,5 +1,5 @@
 ## RMD128
-A small C language implementation of RIPEMD-128
+A small C language implementation of RIPEMD-128 / RIPEMD-256
 
 SRIPEMD-128 is a member of the RIPEMD [(RIPE Message Digest)](https://en.wikipedia.org/wiki/RIPEMD) cryptographic hash functions developed in 1996 generating a 128 bit digest.
 See [pdf](https://homes.esat.kuleuven.be/~bosselae/ripemd160/pdf/AB-9601/AB-9601.pdf) and [pseudo-code](https://homes.esat.kuleuven.be/~bosselae/ripemd/rmd128.txt).

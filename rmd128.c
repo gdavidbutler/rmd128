@@ -222,6 +222,40 @@ rmd128final(
 }
 
 void
+rmd128hmac(
+  const unsigned char *k
+ ,unsigned int kl
+ ,const unsigned char *d
+ ,unsigned int dl
+ ,unsigned char *h
+){
+  rmd128_t c;
+  unsigned char i[64];
+  unsigned char o[64];
+  unsigned int l;
+
+  if (kl > 64) {
+    rmd128init(&c);
+    rmd128update(&c, k, kl);
+    rmd128final(&c, h);
+    k = h;
+    kl = 16;
+  }
+  for (l = 0; l < sizeof (i); ++l)
+    i[l] = (l < kl ? *(k + l) : 0x00) ^ 0x36;
+  for (l = 0; l < sizeof (o); ++l)
+    o[l] = (l < kl ? *(k + l) : 0x00) ^ 0x5c;
+  rmd128init(&c);
+  rmd128update(&c, i, sizeof (i));
+  rmd128update(&c, d, dl);
+  rmd128final(&c, h);
+  rmd128init(&c);
+  rmd128update(&c, o, sizeof (o));
+  rmd128update(&c, h, 16);
+  rmd128final(&c, h);
+}
+
+void
 rmd128hex(
   const unsigned char *h
  ,char *o

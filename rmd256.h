@@ -23,4 +23,5 @@ unsigned int rmd256tsize(void);
 void rmd256init(rmd256_t *);
 void rmd256update(rmd256_t *, const unsigned char *, unsigned int);
 void rmd256final(rmd256_t *, unsigned char *); /* 32 unsigned char (256 bits) */
+void rmd256hmac(const unsigned char *k, unsigned int kl, const unsigned char *d, unsigned int dl, unsigned char *h); /* 32 unsigned char (256 bits) */
 void rmd256hex(const unsigned char *, char *); /* 32 unsigned char (256 bits), 64 char (not null-terminated) */

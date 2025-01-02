@@ -247,6 +247,40 @@ rmd256final(
 }
 
 void
+rmd256hmac(
+  const unsigned char *k
+ ,unsigned int kl
+ ,const unsigned char *d
+ ,unsigned int dl
+ ,unsigned char *h
+){
+  rmd256_t c;
+  unsigned char i[64];
+  unsigned char o[64];
+  unsigned int l;
+
+  if (kl > 64) {
+    rmd256init(&c);
+    rmd256update(&c, k, kl);
+    rmd256final(&c, h);
+    k = h;
+    kl = 32;
+  }
+  for (l = 0; l < sizeof (i); ++l)
+    i[l] = (l < kl ? *(k + l) : 0x00) ^ 0x36;
+  for (l = 0; l < sizeof (o); ++l)
+    o[l] = (l < kl ? *(k + l) : 0x00) ^ 0x5c;
+  rmd256init(&c);
+  rmd256update(&c, i, sizeof (i));
+  rmd256update(&c, d, dl);
+  rmd256final(&c, h);
+  rmd256init(&c);
+  rmd256update(&c, o, sizeof (o));
+  rmd256update(&c, h, 32);
+  rmd256final(&c, h);
+}
+
+void
 rmd256hex(
   const unsigned char *h
  ,char *o

@@ -266,10 +266,14 @@ rmd256hmac(
     k = h;
     kl = 32;
   }
-  for (l = 0; l < sizeof (i); ++l)
-    i[l] = (l < kl ? *(k + l) : 0x00) ^ 0x36;
-  for (l = 0; l < sizeof (o); ++l)
-    o[l] = (l < kl ? *(k + l) : 0x00) ^ 0x5c;
+  for (l = 0; l < kl; ++l) {
+    i[l] = *(k + l) ^ 0x36;
+    o[l] = *(k + l) ^ 0x5c;
+  }
+  for (; l < 64; ++l) {
+    i[l] = 0x00 ^ 0x36;
+    o[l] = 0x00 ^ 0x5c;
+  }
   rmd256init(&c);
   rmd256update(&c, i, sizeof (i));
   rmd256update(&c, d, dl);

@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef __RMD128_H__
-#define __RMD128_H__
+#ifndef RMD128_H
+#define RMD128_H
 
 typedef struct rmd128 rmd128_t;
 unsigned int rmd128tsize(void);
@@ -29,4 +29,4 @@ void rmd128final(rmd128_t *, unsigned char *); /* 16 unsigned char (128 bits) */
 void rmd128hmac(const unsigned char *k, unsigned int kl, const unsigned char *d, unsigned int dl, unsigned char *h); /* 16 unsigned char (128 bits) */
 void rmd128hex(const unsigned char *, char *); /* 16 unsigned char (128 bits), 32 char (not null-terminated) */
 
-#endif /* __RMD128_H__ */
+#endif /* RMD128_H */

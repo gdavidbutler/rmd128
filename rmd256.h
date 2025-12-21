@@ -18,8 +18,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef __RMD256_H__
-#define __RMD256_H__
+#ifndef RMD256_H
+#define RMD256_H
 
 typedef struct rmd256 rmd256_t;
 unsigned int rmd256tsize(void);
@@ -29,4 +29,4 @@ void rmd256final(rmd256_t *, unsigned char *); /* 32 unsigned char (256 bits) */
 void rmd256hmac(const unsigned char *k, unsigned int kl, const unsigned char *d, unsigned int dl, unsigned char *h); /* 32 unsigned char (256 bits) */
 void rmd256hex(const unsigned char *, char *); /* 32 unsigned char (256 bits), 64 char (not null-terminated) */
 
-#endif /* __RMD256_H__ */
+#endif /* RMD256_H */

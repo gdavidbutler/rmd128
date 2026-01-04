@@ -21,12 +21,13 @@
 #ifndef RMD256_H
 #define RMD256_H
 
+#define RMD256_SZ 32 /* 256 bits */
 typedef struct rmd256 rmd256_t;
 unsigned int rmd256tsize(void);
 void rmd256init(rmd256_t *);
 void rmd256update(rmd256_t *, const unsigned char *, unsigned int);
-void rmd256final(rmd256_t *, unsigned char *); /* 32 unsigned char (256 bits) */
-void rmd256hmac(const unsigned char *k, unsigned int kl, const unsigned char *d, unsigned int dl, unsigned char *h); /* 32 unsigned char (256 bits) */
-void rmd256hex(const unsigned char *, char *); /* 32 unsigned char (256 bits), 64 char (not null-terminated) */
+void rmd256final(rmd256_t *, unsigned char *); /* RMD256_SZ */
+void rmd256hmac(const unsigned char *k, unsigned int kl, const unsigned char *d, unsigned int dl, unsigned char *h); /* RMD256_SZ */
+void rmd256hex(const unsigned char *, char *); /* RMD256_SZ, 2 * RMD256_SZ (not null-terminated) */
 
 #endif /* RMD256_H */

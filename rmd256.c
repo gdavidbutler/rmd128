@@ -264,7 +264,7 @@ rmd256hmac(
     rmd256update(&c, k, kl);
     rmd256final(&c, h);
     k = h;
-    kl = 32;
+    kl = RMD256_SZ;
   }
   for (l = 0; l < kl; ++l) {
     i[l] = *(k + l) ^ 0x36;
@@ -280,7 +280,7 @@ rmd256hmac(
   rmd256final(&c, h);
   rmd256init(&c);
   rmd256update(&c, o, sizeof (o));
-  rmd256update(&c, h, 32);
+  rmd256update(&c, h, RMD256_SZ);
   rmd256final(&c, h);
 }
 
@@ -291,7 +291,7 @@ rmd256hex(
 ){
   unsigned int i;
 
-  for (i = 0; i < 32; ++i, ++h) {
+  for (i = 0; i < RMD256_SZ; ++i, ++h) {
     static const char m[] = "0123456789abcdef";
 
     *o++ = m[(*h >> 4) & 0xf];

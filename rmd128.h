@@ -21,12 +21,13 @@
 #ifndef RMD128_H
 #define RMD128_H
 
+#define RMD128_SZ 16 /* 128 bits */
 typedef struct rmd128 rmd128_t;
 unsigned int rmd128tsize(void);
 void rmd128init(rmd128_t *);
 void rmd128update(rmd128_t *, const unsigned char *, unsigned int);
-void rmd128final(rmd128_t *, unsigned char *); /* 16 unsigned char (128 bits) */
-void rmd128hmac(const unsigned char *k, unsigned int kl, const unsigned char *d, unsigned int dl, unsigned char *h); /* 16 unsigned char (128 bits) */
-void rmd128hex(const unsigned char *, char *); /* 16 unsigned char (128 bits), 32 char (not null-terminated) */
+void rmd128final(rmd128_t *, unsigned char *); /* RMD128_SZ */
+void rmd128hmac(const unsigned char *k, unsigned int kl, const unsigned char *d, unsigned int dl, unsigned char *h); /* RMD128_SZ */
+void rmd128hex(const unsigned char *, char *); /* RMD128_SZ, 2 * RMD128_SZ (not null-terminated) */
 
 #endif /* RMD128_H */

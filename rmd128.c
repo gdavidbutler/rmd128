@@ -239,7 +239,7 @@ rmd128hmac(
     rmd128update(&c, k, kl);
     rmd128final(&c, h);
     k = h;
-    kl = 16;
+    kl = RMD128_SZ;
   }
   for (l = 0; l < kl; ++l) {
     i[l] = *(k + l) ^ 0x36;
@@ -255,7 +255,7 @@ rmd128hmac(
   rmd128final(&c, h);
   rmd128init(&c);
   rmd128update(&c, o, sizeof (o));
-  rmd128update(&c, h, 16);
+  rmd128update(&c, h, RMD128_SZ);
   rmd128final(&c, h);
 }
 
@@ -266,7 +266,7 @@ rmd128hex(
 ){
   unsigned int i;
 
-  for (i = 0; i < 16; ++i, ++h) {
+  for (i = 0; i < RMD128_SZ; ++i, ++h) {
     static const char m[] = "0123456789abcdef";
 
     *o++ = m[(*h >> 4) & 0xf];

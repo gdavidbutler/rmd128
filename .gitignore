@@ -54,3 +54,4 @@ dkms.conf
 # Local Executables
 rmd128
 rmd256
+kat

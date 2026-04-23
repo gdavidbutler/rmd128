@@ -21,12 +21,13 @@
 #include "rmd256.h"
 
 typedef unsigned int rmd256_bt; /* unsigned 32 bits */
+typedef int rmd256_bt_size_check[sizeof (rmd256_bt) == 4 ? 1 : -1];
 struct rmd256 {
- rmd256_bt h[8];       /* unsigned 32 bits */
- rmd256_bt bh;         /* bytes processed high */
- rmd256_bt bl;         /* bytes processed low */
- unsigned int l;       /* current short data */
- unsigned char d[64];  /* short data */
+  rmd256_bt h[8];       /* unsigned 32 bits */
+  rmd256_bt bh;         /* bytes processed high */
+  rmd256_bt bl;         /* bytes processed low */
+  unsigned int l;       /* current short data */
+  unsigned char d[64];  /* short data */
 };
 
 unsigned int
@@ -122,7 +123,7 @@ rmd256mix(
         break;
       }
       f += t[a] + w[r[i][j]] + k[i];
-      t[a] = (f << s[i][j]) | (f >> (32 - s[i][j])); /* rotate left */
+      t[a] = (f << s[i][j]) | (f >> (sizeof (rmd256_bt) * 8 - s[i][j])); /* rotate left */
     }
     switch (i) {
     case 1:
@@ -211,20 +212,20 @@ rmd256final(
   for (; i < 64 - 8; ++i, ++s)
     *s = 0x00;
   /* bytes to bits * 8=2^3 */
-  *s++ = v->bl << 3;
-  *s++ = v->bl >> (1 * 8 - 3);
-  *s++ = v->bl >> (2 * 8 - 3);
-  *s++ = v->bl >> (3 * 8 - 3);
-  *s++ = (v->bh << 3) | (v->bl >> (4 * 8 - 3));
-  *s++ = v->bh >> (1 * 8 - 3);
-  *s++ = v->bh >> (2 * 8 - 3);
-  *s   = v->bh >> (3 * 8 - 3);
+  *s++ = (unsigned char)(v->bl << 3);
+  *s++ = (unsigned char)(v->bl >> (1 * 8 - 3));
+  *s++ = (unsigned char)(v->bl >> (2 * 8 - 3));
+  *s++ = (unsigned char)(v->bl >> (3 * 8 - 3));
+  *s++ = (unsigned char)((v->bh << 3) | (v->bl >> (4 * 8 - 3)));
+  *s++ = (unsigned char)(v->bh >> (1 * 8 - 3));
+  *s++ = (unsigned char)(v->bh >> (2 * 8 - 3));
+  *s   = (unsigned char)(v->bh >> (3 * 8 - 3));
   rmd256mix(v->h, v->d);
   for (i = 0; i < 8; ++i) {
-    *h++ = v->h[i] >> (0 * 8);
-    *h++ = v->h[i] >> (1 * 8);
-    *h++ = v->h[i] >> (2 * 8);
-    *h++ = v->h[i] >> (3 * 8);
+    *h++ = (unsigned char)(v->h[i] >> (0 * 8));
+    *h++ = (unsigned char)(v->h[i] >> (1 * 8));
+    *h++ = (unsigned char)(v->h[i] >> (2 * 8));
+    *h++ = (unsigned char)(v->h[i] >> (3 * 8));
   }
 }
 
@@ -264,6 +265,21 @@ rmd256hmac(
   rmd256update(&c, o, sizeof (o));
   rmd256update(&c, h, RMD256_SZ);
   rmd256final(&c, h);
+  /* wipe stack residue; volatile defeats dead-store elimination */
+  {
+    volatile unsigned char *p;
+    unsigned int n;
+
+    p = (volatile unsigned char *)&c;
+    for (n = 0; n < sizeof (c); ++n)
+      *p++ = 0;
+    p = (volatile unsigned char *)i;
+    for (n = 0; n < sizeof (i); ++n)
+      *p++ = 0;
+    p = (volatile unsigned char *)o;
+    for (n = 0; n < sizeof (o); ++n)
+      *p++ = 0;
+  }
 }
 
 void

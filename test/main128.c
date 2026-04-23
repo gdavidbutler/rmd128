@@ -16,6 +16,10 @@ main(
   rmd128init(c);
   while ((i = fread(b, 1, sizeof (b), stdin)) == sizeof (b))
     rmd128update(c, b, i);
+  if (ferror(stdin)) {
+    free(c);
+    return (1);
+  }
   if (i > 0)
     rmd128update(c, b, i);
   rmd128final(c, h);

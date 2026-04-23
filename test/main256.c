@@ -16,6 +16,10 @@ main(
   rmd256init(c);
   while ((i = fread(b, 1, sizeof (b), stdin)) == sizeof (b))
     rmd256update(c, b, i);
+  if (ferror(stdin)) {
+    free(c);
+    return (1);
+  }
   if (i > 0)
     rmd256update(c, b, i);
   rmd256final(c, h);

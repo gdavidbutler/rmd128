@@ -1,9 +1,12 @@
-CFLAGS=-I. -Os
+CFLAGS=-I. -Os -g
 
 all: rmd128 rmd256
 
+check: kat
+	./kat
+
 clobber: clean
-	rm -f rmd128 rmd256
+	rm -f rmd128 rmd256 kat
 
 clean:
 	rm -f rmd128.o rmd256.o
@@ -19,3 +22,6 @@ rmd256: test/main256.c rmd256.o
 
 rmd256.o: rmd256.c rmd256.h
 	$(CC) $(CFLAGS) -c rmd256.c
+
+kat: test/kat.c rmd128.o rmd256.o
+	$(CC) $(CFLAGS) -o kat test/kat.c rmd128.o rmd256.o

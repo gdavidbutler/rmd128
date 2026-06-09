@@ -28,6 +28,7 @@ void rmd128init(rmd128_t *);
 void rmd128update(rmd128_t *, const unsigned char *, unsigned int);
 void rmd128final(rmd128_t *, unsigned char *); /* RMD128_SZ */
 void rmd128hmac(const unsigned char *k, unsigned int kl, const unsigned char *d, unsigned int dl, unsigned char *h); /* RMD128_SZ */
+void rmd128hkdf(const unsigned char *k, unsigned int kl, const unsigned char *d, unsigned int dl, unsigned char *o, unsigned int ol); /* up to 255 * RMD128_SZ */
 void rmd128hex(const unsigned char *, char *); /* RMD128_SZ, 2 * RMD128_SZ (not null-terminated) */
 
 #endif /* RMD128_H */

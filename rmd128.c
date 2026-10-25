@@ -267,6 +267,8 @@ rmd128hkdf(
  ,unsigned int sl
 ){
   rmd128_t c;
+  rmd128_t ci;
+  rmd128_t co;
   unsigned char i[64];
   unsigned char o[64];
   unsigned char t[RMD128_SZ];
@@ -291,20 +293,22 @@ rmd128hkdf(
     i[l] = 0x00 ^ 0x36;
     o[l] = 0x00 ^ 0x5c;
   }
+  rmd128init(&ci);
+  rmd128update(&ci, i, sizeof (i));
+  rmd128init(&co);
+  rmd128update(&co, o, sizeof (o));
   for (n = 0, l = 0; l < sl;) {
     unsigned char b;
     unsigned int j;
 
     b = (unsigned char)++n;
-    rmd128init(&c);
-    rmd128update(&c, i, sizeof (i));
+    c = ci;
     if (n > 1)
       rmd128update(&c, t, RMD128_SZ);
     rmd128update(&c, d, dl);
     rmd128update(&c, &b, 1);
     rmd128final(&c, t2);
-    rmd128init(&c);
-    rmd128update(&c, o, sizeof (o));
+    c = co;
     rmd128update(&c, t2, RMD128_SZ);
     rmd128final(&c, t);
     for (j = 0; j < RMD128_SZ && l < sl; ++j, ++l)
@@ -317,6 +321,12 @@ rmd128hkdf(
 
     p = (volatile unsigned char *)&c;
     for (m = 0; m < sizeof (c); ++m)
+      *p++ = 0;
+    p = (volatile unsigned char *)&ci;
+    for (m = 0; m < sizeof (ci); ++m)
+      *p++ = 0;
+    p = (volatile unsigned char *)&co;
+    for (m = 0; m < sizeof (co); ++m)
       *p++ = 0;
     p = (volatile unsigned char *)i;
     for (m = 0; m < sizeof (i); ++m)

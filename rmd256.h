@@ -27,8 +27,12 @@ unsigned int rmd256tsize(void);
 void rmd256init(rmd256_t *);
 void rmd256update(rmd256_t *, const unsigned char *, unsigned int);
 void rmd256final(rmd256_t *, unsigned char *); /* RMD256_SZ */
+typedef struct rmd256k rmd256k_t; /* an HMAC keyed: the key's two pads hashed once; its owner wipes it */
+unsigned int rmd256ktsize(void);
+void rmd256kinit(rmd256k_t *, const unsigned char *k, unsigned int kl);
+void rmd256khmac(const rmd256k_t *, const unsigned char *d, unsigned int dl, unsigned char *h); /* RMD256_SZ */
 void rmd256hmac(const unsigned char *k, unsigned int kl, const unsigned char *d, unsigned int dl, unsigned char *h); /* RMD256_SZ */
-void rmd256hkdf(const unsigned char *k, unsigned int kl, const unsigned char *d, unsigned int dl, unsigned char *o, unsigned int ol); /* up to 255 * RMD256_SZ */
+void rmd256hkdf(const unsigned char *k, unsigned int kl, const unsigned char *d, unsigned int dl, unsigned char *o, unsigned int ol); /* up to 255 * RMD256_SZ; o must not overlap d when ol > RMD256_SZ */
 void rmd256hex(const unsigned char *, char *); /* RMD256_SZ, 2 * RMD256_SZ (not null-terminated) */
 
 #endif /* RMD256_H */

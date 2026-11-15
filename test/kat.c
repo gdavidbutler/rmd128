@@ -204,6 +204,200 @@ main(
   hexof(h256, RMD256_SZ, b256);
   fail += check("hmac-rmd256 t6", b256, "821543a295eccf093af9b461f630d7c49206fb2158e5ac89e73a02cf089528ed");
 
+  /* the one-shot and the keyed form, one kinit then a khmac a message,
+   * each RFC 2104's computed here from the hash alone, at keys under,
+   * at and past the block; the one-shot and
+   * the keyed form writing over their own data under a key past the
+   * block; and a key past the block keyed as its hash, so no byte of it
+   * is left in the state */
+  {
+    static const unsigned int Kl[] = { 0, 1, 20, 64 - 1, 64, 64 + 1, 2 * 64 + 7 };
+    static const unsigned int Dl[] = { 0, 1, 55, 64, 200, 500 };
+    static unsigned char Kb[2 * 64 + 7];
+    static unsigned char Db[500];
+    static unsigned char Wb[500];
+    rmd128_t *kc;
+    rmd128k_t *kx;
+    rmd128k_t *ky;
+    unsigned char kb[64];
+    unsigned char p[64];
+    unsigned char t[RMD128_SZ];
+    unsigned char u[RMD128_SZ];
+    unsigned int i;
+    unsigned int j;
+    unsigned int l;
+
+    for (i = 0; i < sizeof (Kb); ++i)
+      Kb[i] = (unsigned char)(i * 13 + 5);
+    for (i = 0; i < sizeof (Db); ++i)
+      Db[i] = (unsigned char)(i * 7 + 3);
+    kx = ky = 0;
+    if (!(kc = malloc(rmd128tsize())) || !(kx = calloc(1, rmd128ktsize())) || !(ky = calloc(1, rmd128ktsize()))) {
+      fprintf(stderr, "FAIL: malloc(rmd128tsize, rmd128ktsize)\n");
+      free(kc);
+      free(kx);
+      return (1);
+    }
+    for (i = 0; i < sizeof (Kl) / sizeof (Kl[0]); ++i) {
+      memset(kb, 0, sizeof (kb));
+      if (Kl[i] > sizeof (kb)) {
+        rmd128init(kc);
+        rmd128update(kc, Kb, Kl[i]);
+        rmd128final(kc, kb);
+      } else
+        memcpy(kb, Kb, Kl[i]);
+      rmd128kinit(kx, Kb, Kl[i]);
+      for (j = 0; j < sizeof (Dl) / sizeof (Dl[0]); ++j) {
+        for (l = 0; l < sizeof (p); ++l)
+          p[l] = kb[l] ^ 0x36;
+        rmd128init(kc);
+        rmd128update(kc, p, sizeof (p));
+        rmd128update(kc, Db, Dl[j]);
+        rmd128final(kc, t);
+        for (l = 0; l < sizeof (p); ++l)
+          p[l] = kb[l] ^ 0x5c;
+        rmd128init(kc);
+        rmd128update(kc, p, sizeof (p));
+        rmd128update(kc, t, RMD128_SZ);
+        rmd128final(kc, t);
+        rmd128hmac(Kb, Kl[i], Db, Dl[j], u);
+        if (memcmp(t, u, RMD128_SZ)) {
+          fprintf(stderr, "FAIL rmd128hmac: key %u data %u not RFC 2104's\n", Kl[i], Dl[j]);
+          ++fail;
+        }
+        rmd128khmac(kx, Db, Dl[j], u);
+        if (memcmp(t, u, RMD128_SZ)) {
+          fprintf(stderr, "FAIL rmd128khmac: key %u data %u not RFC 2104's\n", Kl[i], Dl[j]);
+          ++fail;
+        }
+      }
+    }
+    rmd128hmac(Kb, sizeof (Kb), Db, 100, u);
+    memcpy(Wb, Db, sizeof (Wb));
+    rmd128hmac(Kb, sizeof (Kb), Wb, 100, Wb);
+    if (memcmp(Wb, u, RMD128_SZ)) {
+      fprintf(stderr, "FAIL rmd128hmac: over its own data, a long key\n");
+      ++fail;
+    }
+    memcpy(Wb, Db, sizeof (Wb));
+    rmd128kinit(kx, Kb, sizeof (Kb));
+    rmd128khmac(kx, Wb, 100, Wb);
+    if (memcmp(Wb, u, RMD128_SZ)) {
+      fprintf(stderr, "FAIL rmd128khmac: over its own data, a long key\n");
+      ++fail;
+    }
+    rmd128init(kc);
+    rmd128update(kc, Kb, sizeof (Kb));
+    rmd128final(kc, t);
+    memset(kx, 0, rmd128ktsize());
+    rmd128kinit(kx, Kb, sizeof (Kb));
+    rmd128kinit(ky, t, RMD128_SZ);
+    if (memcmp(kx, ky, rmd128ktsize())) {
+      fprintf(stderr, "FAIL rmd128kinit: a long key's bytes left in the state\n");
+      ++fail;
+    }
+    free(kc);
+    free(kx);
+    free(ky);
+  }
+
+  /* the one-shot and the keyed form, one kinit then a khmac a message,
+   * each RFC 2104's computed here from the hash alone, at keys under,
+   * at and past the block; the one-shot and
+   * the keyed form writing over their own data under a key past the
+   * block; and a key past the block keyed as its hash, so no byte of it
+   * is left in the state */
+  {
+    static const unsigned int Kl[] = { 0, 1, 20, 64 - 1, 64, 64 + 1, 2 * 64 + 7 };
+    static const unsigned int Dl[] = { 0, 1, 55, 64, 200, 500 };
+    static unsigned char Kb[2 * 64 + 7];
+    static unsigned char Db[500];
+    static unsigned char Wb[500];
+    rmd256_t *kc;
+    rmd256k_t *kx;
+    rmd256k_t *ky;
+    unsigned char kb[64];
+    unsigned char p[64];
+    unsigned char t[RMD256_SZ];
+    unsigned char u[RMD256_SZ];
+    unsigned int i;
+    unsigned int j;
+    unsigned int l;
+
+    for (i = 0; i < sizeof (Kb); ++i)
+      Kb[i] = (unsigned char)(i * 13 + 5);
+    for (i = 0; i < sizeof (Db); ++i)
+      Db[i] = (unsigned char)(i * 7 + 3);
+    kx = ky = 0;
+    if (!(kc = malloc(rmd256tsize())) || !(kx = calloc(1, rmd256ktsize())) || !(ky = calloc(1, rmd256ktsize()))) {
+      fprintf(stderr, "FAIL: malloc(rmd256tsize, rmd256ktsize)\n");
+      free(kc);
+      free(kx);
+      return (1);
+    }
+    for (i = 0; i < sizeof (Kl) / sizeof (Kl[0]); ++i) {
+      memset(kb, 0, sizeof (kb));
+      if (Kl[i] > sizeof (kb)) {
+        rmd256init(kc);
+        rmd256update(kc, Kb, Kl[i]);
+        rmd256final(kc, kb);
+      } else
+        memcpy(kb, Kb, Kl[i]);
+      rmd256kinit(kx, Kb, Kl[i]);
+      for (j = 0; j < sizeof (Dl) / sizeof (Dl[0]); ++j) {
+        for (l = 0; l < sizeof (p); ++l)
+          p[l] = kb[l] ^ 0x36;
+        rmd256init(kc);
+        rmd256update(kc, p, sizeof (p));
+        rmd256update(kc, Db, Dl[j]);
+        rmd256final(kc, t);
+        for (l = 0; l < sizeof (p); ++l)
+          p[l] = kb[l] ^ 0x5c;
+        rmd256init(kc);
+        rmd256update(kc, p, sizeof (p));
+        rmd256update(kc, t, RMD256_SZ);
+        rmd256final(kc, t);
+        rmd256hmac(Kb, Kl[i], Db, Dl[j], u);
+        if (memcmp(t, u, RMD256_SZ)) {
+          fprintf(stderr, "FAIL rmd256hmac: key %u data %u not RFC 2104's\n", Kl[i], Dl[j]);
+          ++fail;
+        }
+        rmd256khmac(kx, Db, Dl[j], u);
+        if (memcmp(t, u, RMD256_SZ)) {
+          fprintf(stderr, "FAIL rmd256khmac: key %u data %u not RFC 2104's\n", Kl[i], Dl[j]);
+          ++fail;
+        }
+      }
+    }
+    rmd256hmac(Kb, sizeof (Kb), Db, 100, u);
+    memcpy(Wb, Db, sizeof (Wb));
+    rmd256hmac(Kb, sizeof (Kb), Wb, 100, Wb);
+    if (memcmp(Wb, u, RMD256_SZ)) {
+      fprintf(stderr, "FAIL rmd256hmac: over its own data, a long key\n");
+      ++fail;
+    }
+    memcpy(Wb, Db, sizeof (Wb));
+    rmd256kinit(kx, Kb, sizeof (Kb));
+    rmd256khmac(kx, Wb, 100, Wb);
+    if (memcmp(Wb, u, RMD256_SZ)) {
+      fprintf(stderr, "FAIL rmd256khmac: over its own data, a long key\n");
+      ++fail;
+    }
+    rmd256init(kc);
+    rmd256update(kc, Kb, sizeof (Kb));
+    rmd256final(kc, t);
+    memset(kx, 0, rmd256ktsize());
+    rmd256kinit(kx, Kb, sizeof (Kb));
+    rmd256kinit(ky, t, RMD256_SZ);
+    if (memcmp(kx, ky, rmd256ktsize())) {
+      fprintf(stderr, "FAIL rmd256kinit: a long key's bytes left in the state\n");
+      ++fail;
+    }
+    free(kc);
+    free(kx);
+    free(ky);
+  }
+
   free(c128);
   free(c256);
   if (fail) {

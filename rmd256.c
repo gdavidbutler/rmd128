@@ -29,6 +29,10 @@ struct rmd256 {
   unsigned int l;       /* current short data */
   unsigned char d[64];  /* short data */
 };
+struct rmd256k {
+  rmd256_t i;           /* the inner pad hashed */
+  rmd256_t o;           /* the outer pad hashed */
+};
 
 unsigned int
 rmd256tsize(
@@ -152,6 +156,19 @@ rmd256mix(
   }
   for (i = 0; i < 8; ++i)
     h[i] += t[i];
+  /* wipe the block's words and the working state, a secret's when a
+   * key is hashed; volatile defeats dead-store elimination */
+  {
+    volatile rmd256_bt *p;
+    unsigned int n;
+
+    for (p = w, n = 0; n < sizeof (w) / sizeof (w[0]); ++n)
+      *p++ = 0;
+    for (p = t, n = 0; n < sizeof (t) / sizeof (t[0]); ++n)
+      *p++ = 0;
+    p = &f;
+    *p = 0;
+  }
 }
 
 void
@@ -229,80 +246,25 @@ rmd256final(
   }
 }
 
-void
-rmd256hmac(
-  const unsigned char *k
- ,unsigned int kl
- ,const unsigned char *d
- ,unsigned int dl
- ,unsigned char *h
+unsigned int
+rmd256ktsize(
+  void
 ){
-  rmd256_t c;
-  unsigned char i[64];
-  unsigned char o[64];
-  unsigned int l;
-
-  if (kl > 64) {
-    rmd256init(&c);
-    rmd256update(&c, k, kl);
-    rmd256final(&c, h);
-    k = h;
-    kl = RMD256_SZ;
-  }
-  for (l = 0; l < kl; ++l) {
-    i[l] = *(k + l) ^ 0x36;
-    o[l] = *(k + l) ^ 0x5c;
-  }
-  for (; l < 64; ++l) {
-    i[l] = 0x00 ^ 0x36;
-    o[l] = 0x00 ^ 0x5c;
-  }
-  rmd256init(&c);
-  rmd256update(&c, i, sizeof (i));
-  rmd256update(&c, d, dl);
-  rmd256final(&c, h);
-  rmd256init(&c);
-  rmd256update(&c, o, sizeof (o));
-  rmd256update(&c, h, RMD256_SZ);
-  rmd256final(&c, h);
-  /* wipe stack residue; volatile defeats dead-store elimination */
-  {
-    volatile unsigned char *p;
-    unsigned int n;
-
-    p = (volatile unsigned char *)&c;
-    for (n = 0; n < sizeof (c); ++n)
-      *p++ = 0;
-    p = (volatile unsigned char *)i;
-    for (n = 0; n < sizeof (i); ++n)
-      *p++ = 0;
-    p = (volatile unsigned char *)o;
-    for (n = 0; n < sizeof (o); ++n)
-      *p++ = 0;
-  }
+  return (sizeof (rmd256k_t));
 }
 
 void
-rmd256hkdf(
-  const unsigned char *k
+rmd256kinit(
+  rmd256k_t *x
+ ,const unsigned char *k
  ,unsigned int kl
- ,const unsigned char *d
- ,unsigned int dl
- ,unsigned char *s
- ,unsigned int sl
 ){
   rmd256_t c;
-  rmd256_t ci;
-  rmd256_t co;
   unsigned char i[64];
   unsigned char o[64];
   unsigned char t[RMD256_SZ];
-  unsigned char t2[RMD256_SZ];
   unsigned int l;
-  unsigned int n;
 
-  if (sl > 255 * RMD256_SZ)
-    sl = 255 * RMD256_SZ;
   if (kl > 64) {
     rmd256init(&c);
     rmd256update(&c, k, kl);
@@ -318,22 +280,110 @@ rmd256hkdf(
     i[l] = 0x00 ^ 0x36;
     o[l] = 0x00 ^ 0x5c;
   }
-  rmd256init(&ci);
-  rmd256update(&ci, i, sizeof (i));
-  rmd256init(&co);
-  rmd256update(&co, o, sizeof (o));
+  rmd256init(&x->i);
+  rmd256update(&x->i, i, sizeof (i));
+  rmd256init(&x->o);
+  rmd256update(&x->o, o, sizeof (o));
+  /* wipe stack residue; volatile defeats dead-store elimination */
+  {
+    volatile unsigned char *p;
+    unsigned int n;
+
+    p = (volatile unsigned char *)&c;
+    for (n = 0; n < sizeof (c); ++n)
+      *p++ = 0;
+    p = (volatile unsigned char *)i;
+    for (n = 0; n < sizeof (i); ++n)
+      *p++ = 0;
+    p = (volatile unsigned char *)o;
+    for (n = 0; n < sizeof (o); ++n)
+      *p++ = 0;
+    p = (volatile unsigned char *)t;
+    for (n = 0; n < sizeof (t); ++n)
+      *p++ = 0;
+  }
+}
+
+void
+rmd256khmac(
+  const rmd256k_t *x
+ ,const unsigned char *d
+ ,unsigned int dl
+ ,unsigned char *h
+){
+  rmd256_t c;
+
+  c = x->i;
+  rmd256update(&c, d, dl);
+  rmd256final(&c, h);
+  c = x->o;
+  rmd256update(&c, h, RMD256_SZ);
+  rmd256final(&c, h);
+  /* wipe stack residue; volatile defeats dead-store elimination */
+  {
+    volatile unsigned char *p;
+    unsigned int n;
+
+    p = (volatile unsigned char *)&c;
+    for (n = 0; n < sizeof (c); ++n)
+      *p++ = 0;
+  }
+}
+
+void
+rmd256hmac(
+  const unsigned char *k
+ ,unsigned int kl
+ ,const unsigned char *d
+ ,unsigned int dl
+ ,unsigned char *h
+){
+  rmd256k_t x;
+
+  rmd256kinit(&x, k, kl);
+  rmd256khmac(&x, d, dl, h);
+  /* wipe stack residue; volatile defeats dead-store elimination */
+  {
+    volatile unsigned char *p;
+    unsigned int n;
+
+    p = (volatile unsigned char *)&x;
+    for (n = 0; n < sizeof (x); ++n)
+      *p++ = 0;
+  }
+}
+
+void
+rmd256hkdf(
+  const unsigned char *k
+ ,unsigned int kl
+ ,const unsigned char *d
+ ,unsigned int dl
+ ,unsigned char *s
+ ,unsigned int sl
+){
+  rmd256_t c;
+  rmd256k_t x;
+  unsigned char t[RMD256_SZ];
+  unsigned char t2[RMD256_SZ];
+  unsigned int l;
+  unsigned int n;
+
+  if (sl > 255 * RMD256_SZ)
+    sl = 255 * RMD256_SZ;
+  rmd256kinit(&x, k, kl);
   for (n = 0, l = 0; l < sl;) {
     unsigned char b;
     unsigned int j;
 
     b = (unsigned char)++n;
-    c = ci;
+    c = x.i;
     if (n > 1)
       rmd256update(&c, t, RMD256_SZ);
     rmd256update(&c, d, dl);
     rmd256update(&c, &b, 1);
     rmd256final(&c, t2);
-    c = co;
+    c = x.o;
     rmd256update(&c, t2, RMD256_SZ);
     rmd256final(&c, t);
     for (j = 0; j < RMD256_SZ && l < sl; ++j, ++l)
@@ -347,17 +397,8 @@ rmd256hkdf(
     p = (volatile unsigned char *)&c;
     for (m = 0; m < sizeof (c); ++m)
       *p++ = 0;
-    p = (volatile unsigned char *)&ci;
-    for (m = 0; m < sizeof (ci); ++m)
-      *p++ = 0;
-    p = (volatile unsigned char *)&co;
-    for (m = 0; m < sizeof (co); ++m)
-      *p++ = 0;
-    p = (volatile unsigned char *)i;
-    for (m = 0; m < sizeof (i); ++m)
-      *p++ = 0;
-    p = (volatile unsigned char *)o;
-    for (m = 0; m < sizeof (o); ++m)
+    p = (volatile unsigned char *)&x;
+    for (m = 0; m < sizeof (x); ++m)
       *p++ = 0;
     p = (volatile unsigned char *)t;
     for (m = 0; m < sizeof (t); ++m)

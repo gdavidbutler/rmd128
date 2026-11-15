@@ -27,8 +27,12 @@ unsigned int rmd128tsize(void);
 void rmd128init(rmd128_t *);
 void rmd128update(rmd128_t *, const unsigned char *, unsigned int);
 void rmd128final(rmd128_t *, unsigned char *); /* RMD128_SZ */
+typedef struct rmd128k rmd128k_t; /* an HMAC keyed: the key's two pads hashed once; its owner wipes it */
+unsigned int rmd128ktsize(void);
+void rmd128kinit(rmd128k_t *, const unsigned char *k, unsigned int kl);
+void rmd128khmac(const rmd128k_t *, const unsigned char *d, unsigned int dl, unsigned char *h); /* RMD128_SZ */
 void rmd128hmac(const unsigned char *k, unsigned int kl, const unsigned char *d, unsigned int dl, unsigned char *h); /* RMD128_SZ */
-void rmd128hkdf(const unsigned char *k, unsigned int kl, const unsigned char *d, unsigned int dl, unsigned char *o, unsigned int ol); /* up to 255 * RMD128_SZ */
+void rmd128hkdf(const unsigned char *k, unsigned int kl, const unsigned char *d, unsigned int dl, unsigned char *o, unsigned int ol); /* up to 255 * RMD128_SZ; o must not overlap d when ol > RMD128_SZ */
 void rmd128hex(const unsigned char *, char *); /* RMD128_SZ, 2 * RMD128_SZ (not null-terminated) */
 
 #endif /* RMD128_H */

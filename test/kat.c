@@ -67,6 +67,21 @@ check(
   return (1);
 }
 
+/* the index of the first byte not zero, n when all are */
+static unsigned int
+unzeroed(
+  const void *c
+ ,unsigned int n
+){
+  const unsigned char *p;
+  unsigned int q;
+
+  for (p = c, q = 0; q < n; ++q, ++p)
+    if (*p)
+      break;
+  return (q);
+}
+
 int
 main(
   void
@@ -99,6 +114,7 @@ main(
   unsigned int q;
   unsigned int off;
   unsigned int n;
+  unsigned int z;
   int fail;
 
   if (!(c128 = malloc(rmd128tsize()))) {
@@ -114,17 +130,27 @@ main(
 
   /* Spec KATs */
   for (q = 0; q < sizeof (Svec) / sizeof (Svec[0]); ++q) {
+    memset(c128, 0xa5, rmd128tsize());
     rmd128init(c128);
     rmd128update(c128, (const unsigned char *)Svec[q].in, Svec[q].inlen);
     rmd128final(c128, h128);
     hexof(h128, RMD128_SZ, b128);
     fail += check("rmd128 spec", b128, Svec[q].h128);
+    if ((z = unzeroed(c128, rmd128tsize())) < rmd128tsize()) {
+      fprintf(stderr, "FAIL rmd128final: context byte %u not zero, %u bytes hashed\n", z, Svec[q].inlen);
+      ++fail;
+    }
 
+    memset(c256, 0xa5, rmd256tsize());
     rmd256init(c256);
     rmd256update(c256, (const unsigned char *)Svec[q].in, Svec[q].inlen);
     rmd256final(c256, h256);
     hexof(h256, RMD256_SZ, b256);
     fail += check("rmd256 spec", b256, Svec[q].h256);
+    if ((z = unzeroed(c256, rmd256tsize())) < rmd256tsize()) {
+      fprintf(stderr, "FAIL rmd256final: context byte %u not zero, %u bytes hashed\n", z, Svec[q].inlen);
+      ++fail;
+    }
   }
 
   /* Million-'a' */
@@ -173,6 +199,34 @@ main(
     hexof(h256, RMD256_SZ, b256);
     fail += check("rmd128 stream",  b128, ref128);
     fail += check("rmd256 stream",  b256, ref256);
+  }
+
+  /* final leaves nothing of what it hashed in the context: poisoned
+   * before init, every byte zero after final, at every length through
+   * two blocks and a byte, so every final block length is met */
+  {
+    static unsigned char Db[2 * 64 + 1];
+
+    for (q = 0; q < sizeof (Db); ++q)
+      Db[q] = q * 11 + 1;
+    for (q = 0; q <= sizeof (Db); ++q) {
+      memset(c128, 0xa5, rmd128tsize());
+      rmd128init(c128);
+      rmd128update(c128, Db, q);
+      rmd128final(c128, h128);
+      if ((z = unzeroed(c128, rmd128tsize())) < rmd128tsize()) {
+        fprintf(stderr, "FAIL rmd128final: context byte %u not zero, %u bytes hashed\n", z, q);
+        ++fail;
+      }
+      memset(c256, 0xa5, rmd256tsize());
+      rmd256init(c256);
+      rmd256update(c256, Db, q);
+      rmd256final(c256, h256);
+      if ((z = unzeroed(c256, rmd256tsize())) < rmd256tsize()) {
+        fprintf(stderr, "FAIL rmd256final: context byte %u not zero, %u bytes hashed\n", z, q);
+        ++fail;
+      }
+    }
   }
 
   /* HMAC-RIPEMD-128 from RFC 2286 */

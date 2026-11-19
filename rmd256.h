@@ -26,7 +26,7 @@ typedef struct rmd256 rmd256_t;
 unsigned int rmd256tsize(void);
 void rmd256init(rmd256_t *);
 void rmd256update(rmd256_t *, const unsigned char *, unsigned int);
-void rmd256final(rmd256_t *, unsigned char *); /* RMD256_SZ */
+void rmd256final(rmd256_t *, unsigned char *); /* RMD256_SZ; then zeroes the context, which init may take again */
 typedef struct rmd256k rmd256k_t; /* an HMAC keyed: the key's two pads hashed once; its owner wipes it */
 unsigned int rmd256ktsize(void);
 void rmd256kinit(rmd256k_t *, const unsigned char *k, unsigned int kl);

@@ -26,7 +26,7 @@ typedef struct rmd128 rmd128_t;
 unsigned int rmd128tsize(void);
 void rmd128init(rmd128_t *);
 void rmd128update(rmd128_t *, const unsigned char *, unsigned int);
-void rmd128final(rmd128_t *, unsigned char *); /* RMD128_SZ */
+void rmd128final(rmd128_t *, unsigned char *); /* RMD128_SZ; then zeroes the context, which init may take again */
 typedef struct rmd128k rmd128k_t; /* an HMAC keyed: the key's two pads hashed once; its owner wipes it */
 unsigned int rmd128ktsize(void);
 void rmd128kinit(rmd128k_t *, const unsigned char *k, unsigned int kl);
